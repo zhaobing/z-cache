@@ -48,4 +48,5 @@ func TestGetter1(t *testing.T) {
 			t.Errorf("callback failed")
 		}
 	})
+
 }
