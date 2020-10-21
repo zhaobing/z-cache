@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+//并发控制
+
 type cache interface {
 	add(key string, value ByteView)
 	get(key string) (value ByteView, ok bool)
