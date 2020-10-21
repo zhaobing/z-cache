@@ -17,5 +17,5 @@ func Test_mCache(t *testing.T) {
 
 	m.add(key, NewByteViewByString(value))
 	get2, _ := m.get(key)
-	test.AssertStrings(t, get2.ToStr(), value)
+	test.AssertStrings(t, get2.String(), value)
 }

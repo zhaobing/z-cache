@@ -22,8 +22,8 @@ func cloneByteView(b []byte) []byte {
 	return bytes
 }
 
-func (bv *ByteView) ToStr() string {
-	return string(bv.b[:])
+func (bv ByteView) String() string {
+	return string(bv.b)
 }
 
 func NewByteViewByString(str string) ByteView {
