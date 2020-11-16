@@ -51,6 +51,25 @@ func TestGetter1(t *testing.T) {
 		}
 	})
 
+	t.Run("匿名函数", func(t *testing.T) {
+
+		key := "hello"
+		expect := []byte(key)
+
+		get, err := GetterFunc(func(key string) ([]byte, error) {
+			return []byte(key), nil
+		}).Get(key)
+
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !reflect.DeepEqual(get, expect) {
+			t.Errorf("callback error")
+		}
+
+	})
+
 }
 
 var db = map[string]string{

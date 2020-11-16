@@ -21,6 +21,7 @@ type mCache struct {
 func (m *mCache) add(key string, value ByteView) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	//TODO 延迟初始化,可以使用sync.one优化
 	if m.lru == nil {
 		m.lru = lru2.New(m.maxLimitBytes, nil)
 	}

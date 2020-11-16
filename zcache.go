@@ -16,7 +16,7 @@ type Getter interface {
 // A GetterFunc implements Getter with a function.
 type GetterFunc func(key string) ([]byte, error)
 
-// Get implements Getter interface function
+// Get implements Getter interface function,接口型函数，保证灵活性
 func (g GetterFunc) Get(key string) ([]byte, error) {
 	return g(key)
 }
