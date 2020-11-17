@@ -16,6 +16,12 @@ func (bv ByteView) ByteSlice() []byte {
 	return cloneByteView(bv.b)
 }
 
+func CloneByteView(b []byte) ByteView {
+	bytes := make([]byte, len(b))
+	copy(bytes, b)
+	return ByteView{b: bytes}
+}
+
 func cloneByteView(b []byte) []byte {
 	bytes := make([]byte, len(b))
 	copy(bytes, b)

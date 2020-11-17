@@ -83,7 +83,7 @@ func TestGet(t *testing.T) {
 
 	loadCounts := make(map[string]int, len(db))
 
-	zCache := NewGroup("scores", 2<<10, GetterFunc(func(key string) ([]byte, error) {
+	scoresGroup := NewGroup("scores", 2<<10, GetterFunc(func(key string) ([]byte, error) {
 		log.Println("[SlowDB] search key", key)
 		if v, ok := db[key]; ok {
 			if _, ok := loadCounts[key]; !ok {
@@ -98,11 +98,11 @@ func TestGet(t *testing.T) {
 	t.Run("zCacheGet-连续执行2次获取相同key", func(t *testing.T) {
 
 		for k, v := range db {
-			if view, err := zCache.Get(k); err != nil || view.String() != v {
+			if view, err := scoresGroup.Get(k); err != nil || view.String() != v {
 				t.Fatal("fail to get value from cache")
 			}
 
-			if _, err := zCache.Get(k); err != nil || loadCounts[k] > 1 {
+			if _, err := scoresGroup.Get(k); err != nil || loadCounts[k] > 1 {
 				t.Fatalf("get data from cache repeate error ,key is %s", k)
 			}
 		}
@@ -110,7 +110,7 @@ func TestGet(t *testing.T) {
 	})
 
 	t.Run("zCacheGet-获取不存在的key", func(t *testing.T) {
-		if view, err := zCache.Get("unknown"); err == nil {
+		if view, err := scoresGroup.Get("unknown"); err == nil {
 			t.Fatalf("the value of unknown should be empty,but %s got", view)
 		}
 	})

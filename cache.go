@@ -5,23 +5,22 @@ import (
 	"sync"
 )
 
-//并发控制
-
+//并发控制封装
 type cache interface {
 	add(key string, value ByteView)
 	get(key string) (value ByteView, ok bool)
 }
 
 type mCache struct {
-	mu            sync.Mutex
+	mutex         sync.Mutex
 	lru           *lru2.Cache
 	maxLimitBytes int64
 }
 
 func (m *mCache) add(key string, value ByteView) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	//TODO 延迟初始化,可以使用sync.one优化
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	//延迟初始化,是否可以使用sync.one优化?
 	if m.lru == nil {
 		m.lru = lru2.New(m.maxLimitBytes, nil)
 	}
@@ -29,8 +28,8 @@ func (m *mCache) add(key string, value ByteView) {
 }
 
 func (m *mCache) get(key string) (value ByteView, ok bool) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
 	if m.lru == nil {
 		return

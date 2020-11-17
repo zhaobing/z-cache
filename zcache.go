@@ -41,15 +41,15 @@ func NewGroup(name string, maxLimitBytes int64, getter Getter) *Group {
 
 	mu.Lock()
 	defer mu.Unlock()
-	g := &Group{
+	group := &Group{
 		name:   name,
 		getter: getter,
 		mainCache: mCache{
 			maxLimitBytes: maxLimitBytes,
 		},
 	}
-	groups[name] = g
-	return g
+	groups[name] = group
+	return group
 }
 
 // GetGroup returns the named group previously created with NewGroup, or
@@ -86,7 +86,7 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 		return ByteView{}, err
 	}
 
-	value := ByteView{b: cloneByteView(bytes)}
+	value := CloneByteView(bytes)
 	g.populateCache(key, value)
 	return value, nil
 
