@@ -23,9 +23,10 @@ func (g GetterFunc) Get(key string) ([]byte, error) {
 
 // A Group is a cache namespace and associated data loaded spread over
 type Group struct {
-	name      string
-	getter    Getter
-	mainCache mCache
+	name       string
+	getter     Getter
+	mainCache  mCache
+	peerPicker PeerPicker
 }
 
 var (
@@ -61,6 +62,14 @@ func GetGroup(name string) *Group {
 	return g
 }
 
+//RegisterPeers 将实现了PeerPicker的HTTPPool注入到Group中
+func (g *Group) RegisterPeers(peers PeerPicker) {
+	if g.peerPicker != nil {
+		panic("RegisterPeerPicker called more than once")
+	}
+	g.peerPicker = peers
+}
+
 // Get value for a key from cache
 func (g *Group) Get(key string) (ByteView, error) {
 	if key == "" {
@@ -76,8 +85,27 @@ func (g *Group) Get(key string) (ByteView, error) {
 	return g.load(key)
 }
 
-func (g *Group) load(key string) (ByteView, error) {
+func (g *Group) load(key string) (value ByteView, err error) {
+	if g.peerPicker != nil {
+		if peer, ok := g.peerPicker.SelectPeer(key); ok {
+			if value, err := g.getFromPeer(peer, key); err == nil {
+				return value, nil
+			} else {
+				log.Println("[zcahce] Failed to get from peer", err)
+			}
+		}
+	}
+
 	return g.getLocally(key)
+}
+
+//getFromPeer  从远程节点获取缓存值
+func (g *Group) getFromPeer(peerGetter PeerGetter, key string) (ByteView, error) {
+	bytes, err := peerGetter.Get(g.name, key)
+	if err != nil {
+		return ByteView{}, err
+	}
+	return ByteView{bytes}, nil
 }
 
 func (g *Group) getLocally(key string) (ByteView, error) {

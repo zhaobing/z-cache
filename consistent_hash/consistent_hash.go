@@ -9,9 +9,13 @@ import (
 type HashFun func(data []byte) uint32
 
 type HashCircle struct {
-	hashFun                HashFun
-	replicas               int
-	logicalNodeHashCodes   []int
+	//哈希函数
+	hashFun HashFun
+	//虚拟节点数量
+	replicas int
+	//逻辑节点的hashCode
+	logicalNodeHashCodes []int
+	//逻辑节点hashCode与物理节点名称的映射
 	logicalPhysicalNodeMap map[int]string
 }
 
@@ -25,7 +29,6 @@ func New(replicas int, fn HashFun) *HashCircle {
 	if m.hashFun == nil {
 		m.hashFun = crc32.ChecksumIEEE
 	}
-
 	return m
 }
 
@@ -33,6 +36,7 @@ func New(replicas int, fn HashFun) *HashCircle {
 func (m *HashCircle) AddPhysicalNode(nodeNames ...string) {
 	for _, nodeName := range nodeNames {
 		for i := 0; i < m.replicas; i++ {
+			//logicalNodeKey := []byte(strconv.Itoa(i) + "-" + nodeName)
 			logicalNodeKey := []byte(strconv.Itoa(i) + nodeName)
 			logicalNodeHashCode := int(m.hashFun(logicalNodeKey))
 			m.logicalNodeHashCodes = append(m.logicalNodeHashCodes, logicalNodeHashCode)
@@ -40,4 +44,21 @@ func (m *HashCircle) AddPhysicalNode(nodeNames ...string) {
 		}
 	}
 	sort.Ints(m.logicalNodeHashCodes)
+}
+
+//GetPhysicalNode 根据Key，获取哈希环上的最近的节点
+func (m *HashCircle) GetPhysicalNode(key string) string {
+	if len(m.logicalNodeHashCodes) == 0 {
+		return ""
+	}
+
+	hashCode := int(m.hashFun([]byte(key)))
+
+	idx := sort.Search(len(m.logicalNodeHashCodes), func(i int) bool {
+		return m.logicalNodeHashCodes[i] >= hashCode
+	})
+
+	idx = idx % len(m.logicalNodeHashCodes)
+	logicalNodeHash := m.logicalNodeHashCodes[idx]
+	return m.logicalPhysicalNodeMap[logicalNodeHash]
 }
