@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	defaultBasePath = "/z_cache/"
+	defaultBasePath = "/zcache/"
 	defaultRepicas  = 50
 )
 
+//HTTPPool 即作为http客户端发起请求，也作为http服务端接受请求
 type HTTPPool struct {
 	//ip:port  访问地址
 	ipPort string
@@ -30,7 +31,7 @@ type HTTPPool struct {
 }
 
 //Set 实例化每一个节点
-func (p *HTTPPool) Set(peers ...string) {
+func (p *HTTPPool) SetPeers(peers ...string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.peers = consistent_hash.New(defaultRepicas, nil)
@@ -98,8 +99,8 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 /** httpGetter ====================================== **/
-
 type httpGetter struct {
+	//表示将要访问的远程节点的地址，例如 http://example.com/zcache/
 	baseURL string
 }
 

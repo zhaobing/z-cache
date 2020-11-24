@@ -63,11 +63,11 @@ func GetGroup(name string) *Group {
 }
 
 //RegisterPeers 将实现了PeerPicker的HTTPPool注入到Group中
-func (g *Group) RegisterPeers(peers PeerPicker) {
+func (g *Group) RegisterPeers(peerPicker PeerPicker) {
 	if g.peerPicker != nil {
 		panic("RegisterPeerPicker called more than once")
 	}
-	g.peerPicker = peers
+	g.peerPicker = peerPicker
 }
 
 // Get value for a key from cache
