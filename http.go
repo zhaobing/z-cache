@@ -46,9 +46,12 @@ func (p *HTTPPool) SetPeers(peers ...string) {
 func (p *HTTPPool) SelectPeer(key string) (peer PeerGetter, ok bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	log.Println("SelectPeer,key=", key)
 	if peer := p.peers.GetPhysicalNode(key); peer != "" && peer != p.ipPort {
 		p.Log("Pick peer %s", peer)
 		return p.httpGetters[peer], true
+	} else {
+		fmt.Println("peer", peer)
 	}
 	return nil, false
 }
@@ -112,7 +115,7 @@ func (h *httpGetter) Get(group string, key string) ([]byte, error) {
 		url.QueryEscape(group),
 		url.QueryEscape(key),
 	)
-
+	log.Println("[getFromRemotePeer]", u)
 	res, err := http.Get(u)
 	defer res.Body.Close()
 	if err != nil {

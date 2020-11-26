@@ -2,6 +2,7 @@ package consistent_hash
 
 import (
 	"hash/crc32"
+	"log"
 	"sort"
 	"strconv"
 )
@@ -60,5 +61,7 @@ func (m *HashCircle) GetPhysicalNode(key string) string {
 
 	idx = idx % len(m.logicalNodeHashCodes)
 	logicalNodeHash := m.logicalNodeHashCodes[idx]
-	return m.logicalPhysicalNodeMap[logicalNodeHash]
+	physicalNodeName := m.logicalPhysicalNodeMap[logicalNodeHash]
+	log.Println("GetPhysicalNode", "key", key, "nodeName", physicalNodeName)
+	return physicalNodeName
 }

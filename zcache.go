@@ -2,6 +2,7 @@ package z_cache
 
 import (
 	"fmt"
+	"github.com/zhaobing/z_cache/singleflight"
 	"log"
 	"sync"
 )
@@ -27,6 +28,7 @@ type Group struct {
 	getter     Getter
 	mainCache  mCache
 	peerPicker PeerPicker
+	loader     *singleflight.Group
 }
 
 var (
@@ -48,6 +50,7 @@ func NewGroup(name string, maxLimitBytes int64, getter Getter) *Group {
 		mainCache: mCache{
 			maxLimitBytes: maxLimitBytes,
 		},
+		loader: &singleflight.Group{},
 	}
 	groups[name] = group
 	return group
@@ -86,17 +89,26 @@ func (g *Group) Get(key string) (ByteView, error) {
 }
 
 func (g *Group) load(key string) (value ByteView, err error) {
-	if g.peerPicker != nil {
-		if peer, ok := g.peerPicker.SelectPeer(key); ok {
-			if value, err := g.getFromPeer(peer, key); err == nil {
-				return value, nil
-			} else {
-				log.Println("[zcahce] Failed to get from peer", err)
+	// each key is only fetched once (either locally or remotely)
+	// regardless of the number of concurrent callers.
+	view, err := g.loader.Do(key, func() (interface{}, error) {
+		if g.peerPicker != nil {
+			if peer, ok := g.peerPicker.SelectPeer(key); ok {
+				if value, err = g.getFromPeer(peer, key); err == nil {
+					return value, nil
+				}
+				log.Println("[zcache] Failed to get from peer", err)
 			}
 		}
-	}
 
-	return g.getLocally(key)
+		log.Println("g.peerPicker == nil", g.peerPicker == nil)
+		return g.getLocally(key)
+	})
+
+	if err == nil {
+		return view.(ByteView), nil
+	}
+	return
 }
 
 //getFromPeer  从远程节点获取缓存值
@@ -109,6 +121,7 @@ func (g *Group) getFromPeer(peerGetter PeerGetter, key string) (ByteView, error)
 }
 
 func (g *Group) getLocally(key string) (ByteView, error) {
+	log.Println("getLocally")
 	bytes, err := g.getter.Get(key)
 	if err != nil {
 		return ByteView{}, err
