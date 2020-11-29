@@ -2,7 +2,9 @@ package z_cache
 
 import (
 	"fmt"
-	"github.com/zhaobing/z_cache/consistent_hash"
+	"github.com/golang/protobuf/proto"
+	"github.com/zhaobing/z-cache/consistent_hash"
+	pb "github.com/zhaobing/z-cache/zcachepb"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -96,8 +98,16 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	body, err := proto.Marshal(&pb.Response{
+		Value: view.ByteSlice(),
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(view.ByteSlice())
+	w.Write(body)
 
 }
 
@@ -108,31 +118,34 @@ type httpGetter struct {
 }
 
 //Get 访问远程节点,获取group和key对应的缓存
-func (h *httpGetter) Get(group string, key string) ([]byte, error) {
+func (h *httpGetter) Get(in *pb.Request, out *pb.Response) error {
 	u := fmt.Sprintf(
 		"%v%v/%v",
 		h.baseURL,
-		url.QueryEscape(group),
-		url.QueryEscape(key),
+		url.QueryEscape(in.Group),
+		url.QueryEscape(in.Key),
 	)
 	log.Println("[getFromRemotePeer]", u)
 	res, err := http.Get(u)
 	defer res.Body.Close()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server returned:%v", res.Status)
+		return fmt.Errorf("server returned:%v", res.Status)
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("reading response body:%v", err)
+		return fmt.Errorf("reading response body:%v", err)
 	}
 
-	return bytes, nil
+	if err = proto.Unmarshal(bytes, out); err != nil {
+		return fmt.Errorf("decoding response body:%v", err)
+	}
 
+	return nil
 }
 
 var _ PeerGetter = (*httpGetter)(nil)

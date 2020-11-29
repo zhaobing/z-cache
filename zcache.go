@@ -2,7 +2,8 @@ package z_cache
 
 import (
 	"fmt"
-	"github.com/zhaobing/z_cache/singleflight"
+	"github.com/zhaobing/z-cache/singleflight"
+	pb "github.com/zhaobing/z-cache/zcachepb"
 	"log"
 	"sync"
 )
@@ -113,11 +114,20 @@ func (g *Group) load(key string) (value ByteView, err error) {
 
 //getFromPeer  从远程节点获取缓存值
 func (g *Group) getFromPeer(peerGetter PeerGetter, key string) (ByteView, error) {
-	bytes, err := peerGetter.Get(g.name, key)
+
+	req := &pb.Request{
+		Group: g.name,
+		Key:   key,
+	}
+	res := &pb.Response{}
+
+	err := peerGetter.Get(req, res)
 	if err != nil {
 		return ByteView{}, err
 	}
-	return ByteView{bytes}, nil
+	return ByteView{
+		b: res.Value,
+	}, nil
 }
 
 func (g *Group) getLocally(key string) (ByteView, error) {
